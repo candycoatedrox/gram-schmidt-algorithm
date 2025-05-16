@@ -81,7 +81,7 @@ def getInnerProd(dimV):
                         row.append(xNum)
                     except:
                         valid = False
-                        print("Please enter a list of integers or rational numbers.")
+                        print("Please enter a list of integers, rational numbers, or floats.")
             else:
                 print(f"Please enter a row with {dimV} components.")
         
@@ -112,7 +112,7 @@ def getBasis(compNum, dimV):
                         vector.append(xNum)
                     except:
                         valid = False
-                        print("Please enter a list of integers or rational numbers.")
+                        print("Please enter a list of integers, rational numbers, or floats.")
             else:
                 print(f"Please enter a vector with {compNum} components.")
         
