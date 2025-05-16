@@ -3,7 +3,7 @@ import sys
 import time
 import copy
 from rational import Rational, rat
-from vector import Vector, NormalVector, innerProduct
+from vector import Vector, NormalVector, innerProduct, ratOrInt, identity
 
 # make the whole thing function on fractions???
 # currently started to make it function on floats but i can fix that
@@ -18,20 +18,6 @@ def slowType(text):
 def slowInput(prompt):
     # how do i do this???
     pass
-
-def identity(dimV):
-    # each list is a row
-    matrix = []
-    for r in range(dimV):
-        row = []
-        for c in range(dimV):
-            if r == c:
-                row.append(1)
-            else:
-                row.append(0)
-        matrix.append(copy.deepcopy(row))
-
-    return matrix
 
 def getDim():
     valid = False
@@ -74,10 +60,7 @@ def getInnerProd(dimV):
                 valid = True
                 for x in rStr:
                     try:
-                        xNum = rat(x)
-                        if xNum.isWhole():
-                            xNum = int(xNum)
-                        
+                        xNum = ratOrInt(x)
                         row.append(xNum)
                     except:
                         valid = False
@@ -105,10 +88,7 @@ def getBasis(compNum, dimV):
                 valid = True
                 for x in vStr:
                     try:
-                        xNum = rat(x)
-                        if xNum.isWhole():
-                            xNum = int(xNum)
-                        
+                        xNum = ratOrInt(x)
                         vector.append(xNum)
                     except:
                         valid = False

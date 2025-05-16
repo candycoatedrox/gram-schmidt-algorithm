@@ -1,6 +1,38 @@
 import copy
 from rational import Rational, rat
 
+def isScalar(a):
+    if isinstance(a, int):
+        return True
+    if isinstance(a, float):
+        return True
+    if isinstance(a, Rational):
+        return True
+    return False
+
+def ratOrInt(a):
+    if isinstance(a, int):
+        return a
+    
+    if not isinstance(a, Rational):
+        aNum = rat(a)
+    if aNum.isWhole():
+        aNum = int(aNum)
+    return aNum
+
+def identity(dimV):
+    m = []
+    for r in range(dimV):
+        row = []
+        for c in range(dimV):
+            if r == c:
+                row.append(1)
+            else:
+                row.append(0)
+        m.append(copy.deepcopy(row))
+
+    return Matrix(m)
+
 def vector(a):
     "Converts a list or string into a vector."
 
@@ -42,8 +74,13 @@ class Vector:
         "Returns the dimension of a vector."
         return len(self)
     
-    def mag(self, Gij):
-        "Returns the magnitude of a vector within a given inner product space."
+    def mag2(self, Gij):
+        "Returns the magnitude-squared of a vector within a given inner product space."
+        return innerProduct(self, self, Gij)
+
+    def mag(self):
+        "Returns the magnitude of a normalized vector."
+        pass
 
     def __cmp__(self, other):
         "Comparson, used to implement ==, <, etc."
@@ -76,29 +113,41 @@ class Vector:
             raise ValueError("vectors must share dimension")
     
         sum = []
-        for i in self.dim():
+        for i in range(self.dim()):
             sum.append(self.vector[i] + other.vector[i])
         return sum
 
     def __sub__(self, other):
         "Subtract two vectors."
-        pass
+        return self + (-other)
 
     def __mul__(self, other):
-        "Multiply a vector by a constant."
-        pass
+        "Multiply a vector by a constant or matrix."
+
+        if isScalar(other):
+            a = ratOrInt(other)
+            p = copy.deepcopy(self)
+            for i in range(self.dim()):
+                p.vector[i] = ratOrInt(p.vector[i] * a)
+            return p
+
+        elif isinstance(other, Matrix):
+            return other * self
+
+        else:
+            raise TypeError("can only multiply a vector by a scalar or matrix")
 
     def __radd__(self, other):
         "Add two vectors, reflected version."
-        pass
+        return other + self
 
     def __rsub__(self, other):
         "Subtract two vectors, reflected version."
-        pass
-
+        return other - self
+    
     def __rmul__(self, other):
-        "Multiply a vector by a constant, reflected version."
-        pass
+        "Multiply a vector by a constant or matrix, reflected version."
+        return self * other
 
     def normalize(self, Gij):
         # input Vector — outputs NormalVector
@@ -169,20 +218,32 @@ class NormalVector:
         pass
 
     def __mul__(self, other):
-        "Multiply a normalized vector by a constant."
-        pass
+        "Multiply a normalized vector by a constant or matrix."
+
+        if isScalar(other):
+            a = ratOrInt(other)
+            p = copy.deepcopy(self)
+            for i in range(self.dim()):
+                p.vector[i] = ratOrInt(p.vector[i] * a)
+            return p
+
+        elif isinstance(other, Matrix):
+            return other * self
+
+        else:
+            raise TypeError("can only multiply a vector by a scalar or matrix")
 
     def __radd__(self, other):
         "Add two normalized vectors, reflected version."
-        pass
+        return other + self
 
     def __rsub__(self, other):
         "Subtract two normalized vectors, reflected version."
-        pass
+        return other - self
 
     def __rmul__(self, other):
-        "Multiply a normalized vector by a constant, reflected version."
-        pass
+        "Multiply a normalized vector by a constant or matrix, reflected version."
+        return self * other
     
     def __str__(self):
         "Provide a basic string representation of a normalized vector."
@@ -231,7 +292,7 @@ class Matrix:
         "Returns the specified column of a matrix as a list of values."
 
         c = []
-        for r in range(len(self)):
+        for r in range(self.k()):
             c.append(r[i])
         return c
     
@@ -280,21 +341,52 @@ class Matrix:
             raise ValueError("matrices must share dimensions")
         
         sum = []
-        for j in self.k():
+        for j in range(self.k()):
             r = []
-            for i in self.n():
+            for i in range(self.n()):
                 r.append(self.values[j][i] + other.values[j][i])
             sum.append(copy.deepcopy(r))
         return sum
 
     def __sub__(self, other):
         "Subtract two matrices."
-
         return self + (-other)
 
     def __mul__(self, other):
         "Multiply two matrices, a matrix and a vector, or a matrix and a constant."
-        pass
+        
+        if isScalar(other):
+            a = ratOrInt(other)
+            p = copy.deepcopy(self)
+            for j in range(self.k()):
+                for i in range(self.n()):
+                    p.values[j][i] = ratOrInt(p.values[j][i] * a)
+
+        elif isinstance(other, Vector):
+            pass
+
+        elif isinstance(other, Matrix):
+            if self.k() != other.n():
+                raise ValueError("matrices are not compatible")
+            
+            # gives other.k x self.n matrix
+            p = []
+            for j in range(other.k):
+                r = []
+                for i in range(self.n):
+                    c = other.col(i)
+                    x = 0
+                    for ind in range(self.n):
+                        x += (self.values[j][ind] * c[ind])
+
+                    r.append(copy.deepcopy(x))
+                
+                p.append(copy.deepcopy(r))
+
+        else:
+            raise TypeError("can only multiply a matrix by a scalar, vector, or matrix")
+        
+        return p
 
     def __radd__(self, other):
         "Add two matrices, reflected version."
@@ -305,8 +397,13 @@ class Matrix:
         return other - self
 
     def __rmul__(self, other):
-        "Multiply two matrices, a matrix and a vector, or a matrix and a constant, reflected version."
-        pass
+        "Multiply a matrix and a vector or a matrix and a constant, reflected version."
+
+        if isScalar(other):
+            return self * other
+        
+        elif isinstance(other, vector):
+            pass
 
     def inverse(self):
         "Calculate the inverse of a matrix."
