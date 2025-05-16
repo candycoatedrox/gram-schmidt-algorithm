@@ -3,6 +3,7 @@ import sys
 import time
 import copy
 from rational import Rational, rat
+from vector import Vector, NormalVector, innerProduct
 
 # make the whole thing function on fractions???
 # currently started to make it function on floats but i can fix that
@@ -31,9 +32,6 @@ def identity(dimV):
         matrix.append(copy.deepcopy(row))
 
     return matrix
-
-def normalize(v):
-    pass
 
 def getDim():
     valid = False
@@ -75,13 +73,15 @@ def getInnerProd(dimV):
             if len(rStr) == dimV:
                 valid = True
                 for x in rStr:
-                    
                     try:
-                        xNum = float(x)
+                        xNum = rat(x)
+                        if xNum.isWhole():
+                            xNum = int(xNum)
+                        
                         row.append(xNum)
                     except:
                         valid = False
-                        print("Please enter a list of integers or floats.")
+                        print("Please enter a list of integers or rational numbers.")
             else:
                 print(f"Please enter a row with {dimV} components.")
         
@@ -105,11 +105,14 @@ def getBasis(compNum, dimV):
                 valid = True
                 for x in vStr:
                     try:
-                        xNum = float(x)
+                        xNum = rat(x)
+                        if xNum.isWhole():
+                            xNum = int(xNum)
+                        
                         vector.append(xNum)
                     except:
                         valid = False
-                        print("Please enter a list of integers or floats.")
+                        print("Please enter a list of integers or rational numbers.")
             else:
                 print(f"Please enter a vector with {compNum} components.")
         

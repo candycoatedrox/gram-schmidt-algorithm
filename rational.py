@@ -1,7 +1,7 @@
 from decimal import *
 
 def rat(a):
-        "Converts a number into a rational."
+        "Converts a number or string into a rational."
         from math import floor
 
         if isinstance(a, Rational):
@@ -45,6 +45,9 @@ def rat(a):
                 prevN1 = numer
                 prevD1 = denom
             return Rational(numer, denom)
+        
+        else:
+            raise TypeError("can only convert str, int, float, or decimal to rational number")
 
 def contFract(a, prevN1, prevD1, prevN2, prevD2):
     '''Calculates a single recurrent iteration of a continued fraction.'''
@@ -239,7 +242,24 @@ class Rational:
         "Convert a rational number to a float."
 
         return(self.numer / self.denom)
+    
+    def __int__(self):
+        "Convert a rational number to an integer, rounded down."
+
+        if self.isWhole():
+            return self.numer
+        else:
+            flt = float(self)
+            return int(flt)
 
     def __str__(self):
         "Provide a basic string representation of a rational number."
         return(f'{self.numer}/{self.denom}')
+    
+    def isWhole(self):
+        "Return a boolean value based on whether a rational number is an integer."
+
+        if self.denom == 1:
+            return True
+        else:
+            return False
