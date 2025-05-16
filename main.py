@@ -2,6 +2,7 @@
 import sys
 import time
 import copy
+from rational import Rational, rat
 
 # make the whole thing function on fractions???
 # currently started to make it function on floats but i can fix that
@@ -74,6 +75,7 @@ def getInnerProd(dimV):
             if len(rStr) == dimV:
                 valid = True
                 for x in rStr:
+                    
                     try:
                         xNum = float(x)
                         row.append(xNum)
@@ -122,9 +124,9 @@ def main():
     compNum, dimV = getDim()
     Gij = getInnerProd(compNum)
     basis = getBasis(compNum, dimV)
-    print(basis, Gij)
+    print(basis)
 
-    orthonormal = gramSchmidt(basis)
+    orthonormal = gramSchmidt(basis, Gij)
 
 if __name__ == '__main__':
     main()
