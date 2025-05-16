@@ -51,12 +51,18 @@ def vector(a):
 
 def innerProduct(v, w, Gij):
     "Calculate the inner product of two vectors in a given inner product space."
-    
     # needs to work w/ Vectors + NormalVectors
+    
     if v.dim() != w.dim():
         raise ValueError("vectors must share dimension")
     
     dimV = v.dim()
+    sum = 0
+    for i in dimV:
+        for j in dimV:
+            sum += (v.vector[i] * v.vector[j] * Gij.values[j][i])
+    
+    return sum
 
 class Vector:
 
@@ -150,8 +156,20 @@ class Vector:
         return self * other
 
     def normalize(self, Gij):
-        # input Vector — outputs NormalVector
         "Normalize a vector within a given inner product space."
+        # input Vector — outputs NormalVector
+
+        mag2 = self.mag2(Gij)
+        return NormalVector(mag2, vector)
+
+    def matrix(self):
+        "Returns a vector as a matrix."
+
+        m = []
+        for n in self.vector:
+            nL = [n]
+            m.append(copy.deepcopy(nL))
+        return Matrix(m)
     
     def __str__(self):
         "Provide a basic string representation of a normalized vector."
@@ -293,7 +311,7 @@ class Matrix:
 
         c = []
         for r in range(self.k()):
-            c.append(r[i])
+            c.append(self.values[r][i])
         return c
     
     def rowVectors(self):
@@ -361,9 +379,10 @@ class Matrix:
             for j in range(self.k()):
                 for i in range(self.n()):
                     p.values[j][i] = ratOrInt(p.values[j][i] * a)
+            return p
 
         elif isinstance(other, Vector):
-            pass
+            return self * Matrix(other)
 
         elif isinstance(other, Matrix):
             if self.k() != other.n():
@@ -382,11 +401,11 @@ class Matrix:
                     r.append(copy.deepcopy(x))
                 
                 p.append(copy.deepcopy(r))
+            
+            return p
 
         else:
             raise TypeError("can only multiply a matrix by a scalar, vector, or matrix")
-        
-        return p
 
     def __radd__(self, other):
         "Add two matrices, reflected version."
@@ -403,7 +422,7 @@ class Matrix:
             return self * other
         
         elif isinstance(other, vector):
-            pass
+            return Matrix(other) * self
 
     def inverse(self):
         "Calculate the inverse of a matrix."

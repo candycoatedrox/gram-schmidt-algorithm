@@ -3,13 +3,13 @@ import sys
 import time
 import copy
 from rational import Rational, rat
-from vector import Vector, NormalVector, innerProduct, ratOrInt, identity
+from vector import Vector, NormalVector, Matrix, innerProduct, ratOrInt, identity
 
 # make the whole thing function on fractions???
 # currently started to make it function on floats but i can fix that
 
 def slowType(text):
-    """Makes the program more user-friendly by appearing to type out the input."""
+    "Makes the program more user-friendly by appearing to type out the input."
     for l in text:
         print(l, end="")
         sys.stdout.flush()
@@ -48,7 +48,7 @@ def getInnerProd(dimV):
     if standard == "y" or standard == "Y":
         return identity(dimV)
     
-    Gij = []
+    g = []
     for r in range(dimV):
         valid = False
         while not(valid):
@@ -68,11 +68,11 @@ def getInnerProd(dimV):
             else:
                 print(f"Please enter a row with {dimV} components.")
         
-        Gij.append(copy.deepcopy(row))
+        g.append(copy.deepcopy(row))
     
     # should hypothetically have another check here that it's symmetrical...
     # or just. change it so you just enter, ex. G11, G12, G22 for dim = 2
-    return Gij
+    return Matrix(g)
 
 def getBasis(compNum, dimV):
     print("\n")
@@ -96,11 +96,14 @@ def getBasis(compNum, dimV):
             else:
                 print(f"Please enter a vector with {compNum} components.")
         
-        basis.append(copy.deepcopy(vector))
+        v = Vector(vector)
+        basis.append(copy.deepcopy(v))
 
     return basis
 
 def gramSchmidt(basis, Gij):
+    e = []
+
     pass
 
 def main():
