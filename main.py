@@ -2,8 +2,8 @@
 import sys
 import time
 import copy
-from rational import Rational, rat
-from vector import Vector, NormalVector, Matrix, innerProduct, ratOrInt, identity
+from rational import Rational, rat, ratOrInt
+from vector import Vector, NormalVector, Matrix, innerProduct, identity
 
 # make the whole thing function on fractions???
 # currently started to make it function on floats but i can fix that
@@ -25,7 +25,10 @@ def getDim():
         compNum = input("Enter the number of vector components: ")
         try:
             compNum = int(compNum)
-            valid = True
+            if compNum >= 1:
+                valid = True
+            else:
+                print("Please enter a number greater than or equal to 1.")
         except:
             print("Please enter an integer.")
 
@@ -36,8 +39,10 @@ def getDim():
             dimV = int(dimV)
             if dimV > compNum:
                 print("Dimension must be less than or equal to the number of components.")
-            else:
+            elif dimV >= 1:
                 valid = True
+            else:
+                print("Please enter a number greater than or equal to 1.")
         except:
             print("Please enter an integer.")
     
@@ -82,17 +87,21 @@ def getBasis(compNum, dimV):
         while not(valid):
             rawVector = input(f"Enter basis vector {n + 1}, with components separated by spaces: ")
             vStr = rawVector.split()
+            print(vStr)
 
             vector = []
             if len(vStr) == compNum:
                 valid = True
                 for x in vStr:
-                    try:
+                    xNum = ratOrInt(x)
+                    vector.append(xNum)
+                    '''try:
                         xNum = ratOrInt(x)
                         vector.append(xNum)
                     except:
                         valid = False
                         print("Please enter a list of integers, rational numbers, or floats.")
+                        break'''
             else:
                 print(f"Please enter a vector with {compNum} components.")
         
@@ -107,12 +116,22 @@ def gramSchmidt(basis, Gij):
     pass
 
 def main():
-    compNum, dimV = getDim()
+    '''compNum, dimV = getDim()
     Gij = getInnerProd(compNum)
+    print(Gij)
     basis = getBasis(compNum, dimV)
     print(basis)
 
-    orthonormal = gramSchmidt(basis, Gij)
+    orthonormal = gramSchmidt(basis, Gij)'''
+
+    # testing Vector, NormalizedVector, and Matrix!
+
+    i = identity(3)
+    m1 = Matrix([[2,4,3], [-1,0,1], [3,-1,0]])
+
+    print(m1[0][0])
+    print(m1.det())
+
 
 if __name__ == '__main__':
     main()

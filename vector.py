@@ -1,5 +1,7 @@
 import copy
-from rational import Rational, rat
+import math
+import itertools
+from rational import Rational, rat, ratOrInt
 
 def isScalar(a):
     if isinstance(a, int):
@@ -10,15 +12,47 @@ def isScalar(a):
         return True
     return False
 
-def ratOrInt(a):
-    if isinstance(a, int):
-        return a
+def isSquare(a):
+    b = math.sqrt(a)
+    return b.is_integer()
+
+# yeah i copied some code directly from my linkedlist project just to do an overly complex way of checking
+# whether a randomly shuffled ordering is swapped an odd or even amount of times... haha... what about it...
+def swap(self, key1, key2):
+    if not(isinstance(key1, int)) or not(isinstance(key2, int)):
+        raise TypeError("list indices must be integers or slices")
+    if key1 >= len(self) or key1 < -len(self) or key2 >= len(self) or key2 < -len(self):
+        raise KeyError("list index out of range")
     
-    if not isinstance(a, Rational):
-        aNum = rat(a)
-    if aNum.isWhole():
-        aNum = int(aNum)
-    return aNum
+    v1 = self[key1]
+    v2 = self[key2]
+    self[key1] = v2
+    self[key2] = v1
+
+def inOrder(a):
+    s = sorted(a)
+    return a == s
+
+def orderIsEven(a):
+    "Returns a boolean based on whether a given ordering of a range of numbers has even swaps (True) or odd swaps (False)."
+    # done via bubble sort, because I don't know how else to do it
+    
+    # input tuple, convert to list, because i don't know how to work with tuples ayyyy
+    l = []
+    for n in a:
+        l.append(a)
+
+    swaps = 0
+    while not inOrder(l):
+        for i in range(len(l) - 1):
+            if l[i] > l[i+1]:
+                swaps += 1
+                l.swap(i, i+1)
+
+    if (swaps % 2) == 0:
+        return True
+    else:
+        return False
 
 def identity(dimV):
     m = []
@@ -53,14 +87,19 @@ def innerProduct(v, w, Gij):
     "Calculate the inner product of two vectors in a given inner product space."
     # needs to work w/ Vectors + NormalVectors
     
-    if v.dim() != w.dim():
+    if v.dim != w.dim:
         raise ValueError("vectors must share dimension")
     
-    dimV = v.dim()
+    dimV = v.dim
     sum = 0
-    for i in dimV:
-        for j in dimV:
-            sum += (v.vector[i] * v.vector[j] * Gij.values[j][i])
+    for i in range(dimV):
+        for j in range(dimV):
+            sum += (v[i] * v[j] * Gij.values[j][i])
+    
+    if isinstance(v, NormalVector):
+        sum /= math.sqrt(v.divSqrt)
+    if isinstance(w, NormalVector):
+        sum /= math.sqrt(w.divSqrt)
     
     return sum
 
@@ -71,27 +110,42 @@ class Vector:
     def __init__(self, vector):
         "Initialize a vector."
         self.vector = vector
+        self.dim = len(self.vector)
 
     def __len__(self):
         "Returns the dimension of a vector."
-        return len(self.vector)
+        return self.dim
+    
+    def __getitem__(self, n):
+        "Returns the nth component of a vector."
+        if not(isinstance(n, int)):
+            raise TypeError("component indices must be integers or slices")
+        if n >= self.dim or n < -self.dim:
+            raise KeyError("component index out of range")
+        
+        return self.vector[n]
 
-    def dim(self):
-        "Returns the dimension of a vector."
-        return len(self)
+    def __setitem__(self, n, value):
+        "Sets the nth component of a vector to the specified value."
+        if not(isinstance(n, int)):
+            raise TypeError("component indices must be integers or slices")
+        if n >= self.dim or n < -self.dim:
+            raise KeyError("component index out of range")
+        
+        self.vector[n] = value
     
     def mag2(self, Gij):
         "Returns the magnitude-squared of a vector within a given inner product space."
         return innerProduct(self, self, Gij)
 
-    def mag(self):
+    def mag(self, Gij):
         "Returns the magnitude of a normalized vector."
-        pass
+        return math.sqrt(self.mag2(Gij))
 
     def __cmp__(self, other):
         "Comparson, used to implement ==, <, etc."
 
-        if self.dim() == other.dim():
+        if self.dim == other.dim:
             if self.vector == other.vector:
                 return 0
             # kind of arbitrary but SOMETHING needs to go here right?
@@ -99,29 +153,25 @@ class Vector:
                 return -1
             else:
                 return 1
-        elif self.dim() < other.dim():
+        elif self.dim < other.dim:
             return -1
         else:
             return 1
 
     def __neg__(self):
         "Define unary negation with the - symbol."
-        
-        new = copy.deepcopy(self)
-        for i in new.vector:
-            new.vector[i] *= -1
-        return new
+        return self * -1
 
     def __add__(self, other):
         "Add two vectors."
 
-        if self.dim() != other.dim():
+        if self.dim != other.dim:
             raise ValueError("vectors must share dimension")
     
         sum = []
-        for i in range(self.dim()):
-            sum.append(self.vector[i] + other.vector[i])
-        return sum
+        for i in range(self.dim):
+            sum.append(self[i] + other[i])
+        return Vector(sum)
 
     def __sub__(self, other):
         "Subtract two vectors."
@@ -133,34 +183,74 @@ class Vector:
         if isScalar(other):
             a = ratOrInt(other)
             p = copy.deepcopy(self)
-            for i in range(self.dim()):
-                p.vector[i] = ratOrInt(p.vector[i] * a)
+            for i in range(self.dim):
+                p[i] = ratOrInt(p[i] * a)
             return p
 
         elif isinstance(other, Matrix):
-            return other * self
+            return self.matrix() * other
 
         else:
             raise TypeError("can only multiply a vector by a scalar or matrix")
+        
+    def __truediv__(self, other):
+        "Divide a vector by a scalar."
+
+        if isScalar(other):
+            return self * (1/other)
+
+        else:
+            raise TypeError("can only divide a vector by a scalar")
 
     def __radd__(self, other):
         "Add two vectors, reflected version."
-        return other + self
+        return self + other
 
     def __rsub__(self, other):
         "Subtract two vectors, reflected version."
-        return other - self
+        return -(self - other)
     
     def __rmul__(self, other):
         "Multiply a vector by a constant or matrix, reflected version."
-        return self * other
+        if isScalar(other):
+            return self * other
+        
+        elif isinstance(other, Matrix):
+            return other * self.matrix()
+
+        else:
+            raise TypeError("can only multiply a vector by a scalar or matrix")
+    
+    def __iadd__(self, other):
+        "Alter a vector, adding another vector to it."
+        self = self + other
+        return self
+
+    def __isub__(self, other):
+        "Alter a vector, subtracting another vector from it."
+        self = self - other
+        return self
+    
+    def __imul__(self, other):
+        "Alter a vector, multiplying it by by a constant or matrix."
+        self = self * other
+        return self
+    
+    def __itruediv__(self, other):
+        "Alter a vector, dividing it by by a constant."
+        self = self / other
+        return self
 
     def normalize(self, Gij):
         "Normalize a vector within a given inner product space."
-        # input Vector — outputs NormalVector
+        # input Vector — outputs NormalVector (unless mag2 is a perfect square)
 
         mag2 = self.mag2(Gij)
-        return NormalVector(mag2, vector)
+        if isSquare(mag2):
+            v = self / math.sqrt(mag2)
+            return v
+        else:
+            return NormalVector(mag2, self.vector)
 
     def matrix(self):
         "Returns a vector as a matrix."
@@ -175,13 +265,16 @@ class Vector:
         "Provide a basic string representation of a normalized vector."
 
         s = "("
-        for i in range(len(self.vector)):
-            s += self.vector[i]
+        for i in range(self.dim):
             if i != 0:
                 s += " "
+            s += str(self[i])
         s += ")"
 
         return s
+    
+    def __repr__(self):
+        return str(self)
 
 class NormalVector:
 
@@ -191,14 +284,29 @@ class NormalVector:
         "Initialize a normalized vector."
         self.divSqrt = divSqrt
         self.vector = vector
+        self.dim = len(self.vector)
     
     def __len__(self):
         "Returns the dimension of a normalized vector."
-        return len(self.vector)
+        return self.dim
+    
+    def __getitem__(self, n):
+        "Returns the nth component of a vector."
+        if not(isinstance(n, int)):
+            raise TypeError("component indices must be integers or slices")
+        if n >= self.dim or n < -self.dim:
+            raise KeyError("component index out of range")
+        
+        return self.vector[n]
 
-    def dim(self):
-        "Returns the dimension of a normalized vector."
-        return len(self)
+    def __setitem__(self, n, value):
+        "Sets the nth component of a vector to the specified value."
+        if not(isinstance(n, int)):
+            raise TypeError("component indices must be integers or slices")
+        if n >= self.dim or n < -self.dim:
+            raise KeyError("component index out of range")
+        
+        self.vector[n] = value
 
     def mag(self):
         "Returns the magnitude of a normalized vector."
@@ -208,24 +316,24 @@ class NormalVector:
     def __cmp__(self, other):
         "Comparson, used to implement ==, <, etc."
         
-        if self.dim() == other.dim():
+        if self.dim == other.dim:
             if self.vector == other.vector:
                 return 0
             else:
                 # i dunno man
                 return -1
-        elif self.dim() < other.dim():
+        elif self.dim < other.dim:
             return -1
         else:
             return 1
 
     def __neg__(self):
         "Define unary negation with the - symbol."
-        
-        new = copy.deepcopy(self)
-        for i in new.vector:
-            new.vector[i] *= -1
-        return new
+        return self * -1
+    
+    def __abs__(self):
+        "Define absolute value of a normalized vector."
+        return 1
 
     def __add__(self, other):
         "Add two normalized vectors."
@@ -241,8 +349,8 @@ class NormalVector:
         if isScalar(other):
             a = ratOrInt(other)
             p = copy.deepcopy(self)
-            for i in range(self.dim()):
-                p.vector[i] = ratOrInt(p.vector[i] * a)
+            for i in range(self.dim):
+                p[i] = ratOrInt(p[i] * a)
             return p
 
         elif isinstance(other, Matrix):
@@ -250,67 +358,165 @@ class NormalVector:
 
         else:
             raise TypeError("can only multiply a vector by a scalar or matrix")
+        
+    def __truediv__(self, other):
+        "Divide a normalized vector by a scalar."
+
+        if isScalar(other):
+            return self * (1/other)
+
+        else:
+            raise TypeError("can only divide a vector by a scalar")
 
     def __radd__(self, other):
         "Add two normalized vectors, reflected version."
-        return other + self
+        return self + other
 
     def __rsub__(self, other):
         "Subtract two normalized vectors, reflected version."
-        return other - self
+        return -(self - other)
 
     def __rmul__(self, other):
         "Multiply a normalized vector by a constant or matrix, reflected version."
         return self * other
+    
+    def __iadd__(self, other):
+        "Alter a normalized vector, adding another vector to it."
+        self = self + other
+        return self
+
+    def __isub__(self, other):
+        "Alter a normalized vector, subtracting another vector from it."
+        self = self - other
+        return self
+    
+    def __imul__(self, other):
+        "Alter a normalized vector, multiplying it by by a constant or matrix."
+        self = self * other
+        return self
+    
+    def __itruediv__(self, other):
+        "Alter a normalized vector, dividing it by by a constant."
+        self = self / other
+        return self
     
     def __str__(self):
         "Provide a basic string representation of a normalized vector."
 
         s = "("
         if self.divSqrt != 0:
-            s = f'1/sqrt({self.divSqrt})('
+            s = f'(1/√{self.divSqrt})('
 
-        for i in range(len(self.vector)):
-            s += self.vector[i]
+        for i in range(self.dim):
             if i != 0:
                 s += " "
+            s += str(self[i])
         s += ")"
 
         return s
+    
+    def __repr__(self):
+        return str(self)
 
 class Matrix:
     
     def __init__(self, values):
         # should be organized as outer lists = rows
         # convert all floats to rational numbers...?
-        self.values = values
 
-        n = self.n()
-        for r in self.values:
-            if len(r) != n:
-                raise ValueError("inconsistent amount of columns")
+        if isinstance(values, list):
+            # assume all elements of values are the same type
+            if isinstance(values[0], list):
+                self.values = values
 
-    def k(self):
-        "Returns output dimension and number of rows in a matrix."
-        return len(self.values)
+            # automatically convert a list of vectors into a properly formatted list of lists?
+            elif isinstance(values[0], Vector):
+                dim = values[0].dim
+                for c in values:
+                    if c.dim != dim:
+                        raise ValueError("inconsistent amount of rows")
+                
+                matrix = []
+                for r in range(dim):
+                    row = []
+                    for c in range(len(values)):
+                        row.append(values[c][r])
+                    matrix.append(copy.deepcopy(row))
+                
+                self.values = matrix
 
-    def n(self):
-        "Returns input dimension and number of columns in a matrix."
-        return len(self.values[0])
+            else:
+                raise TypeError("matrix must be made of a list of either lists (rows) or vectors (columns)")
+            
+            # k = number of columns; n = number of rows
+            self.k = len(self.values)
+            self.n = len(self.values[0])
+            self.kN = (self.k, self.n)
+
+            self.second_access = False
+
+            for r in self.values:
+                if len(r) != self.k:
+                    raise ValueError("inconsistent amount of columns")
+        
+        else:
+            raise TypeError("matrix must be made of a list of either lists (rows) or vectors (columns)")
+
+    def __getitem__(self, key):
+        "Returns the ith/jth component of a matrix."
+        # proper syntax: self[i][j]
+        # first access will use i, second will use j
+
+        if not(isinstance(key, int)):
+            raise TypeError("component indices must be integers or slices")
+        
+        if not self.second_access:
+            if key >= self.n or key < -self.n:
+                raise KeyError("component index i out of range")
+            
+            self.key1 = key
+            self.second_access = True
+            return self
+        
+        else:
+            if key >= self.k or key < -self.k:
+                raise KeyError("component index j out of range")
+            
+            self.second_access = False
+            return self.values[self.key1][key]
+
+    def __setitem__(self, key, value):
+        "Sets the ith/jth component of a matrix to the specified value."
+        # proper syntax: self[i][j]
+        # first access will use i, second will use j
+
+        if not(isinstance(key, int)):
+            raise TypeError("component indices must be integers or slices")
+        
+        if not self.second_access:
+            if key >= self.n or key < -self.n:
+                raise KeyError("component index i out of range")
+            
+            self.key1 = key
+            self.second_access = True
+            return self
+        
+        else:
+            if key >= self.k or key < -self.k:
+                raise KeyError("component index j out of range")
+            
+            self.second_access = False
+            self.values[self.key1][key] = value
     
-    def kN(self):
-        "Returns both k and n. Useful for checking whether two matrices share the same dimensions."
-        return (self.k(), self.n())
-
     def isSquare(self):
         "Returns a boolean value depending on whether a matrix is square."
-        return self.k() == self.n()
+        return self.k == self.n
     
     def col(self, i):
         "Returns the specified column of a matrix as a list of values."
 
         c = []
-        for r in range(self.k()):
+        for r in range(self.k):
             c.append(self.values[r][i])
         return c
     
@@ -319,14 +525,14 @@ class Matrix:
 
         vectors = []
         for r in self.values:
-            vectors.append(vector(r))
+            vectors.append(Vector(r))
         return vectors
     
     def columnVectors(self):
         "Returns the columns of a matrix as a list of vectors."
 
         vectors = []
-        n = self.n()
+        n = self.n
         for i in range(n):
             vectors.append(Vector(self.col(i)))
         return vectors
@@ -334,34 +540,29 @@ class Matrix:
     def __cmp__(self, other):
         "Comparson, used to implement ==, <, etc."
 
-        if self.kN() == other.kN():
+        if self.kN == other.kN:
             if self.values == other.values:
                 return 0
-            # kind of arbitrary but SOMETHING needs to go here right?
-        elif (self.k() * self.n()) < (other.k() * other.n()):
+        # kind of arbitrary but SOMETHING needs to go here right?
+        elif (self.k * self.n) < (other.k * other.n):
             return -1
         else:
             return 1
 
     def __neg__(self):
         "Define unary negation with the - symbol."
-        
-        new = copy.deepcopy(self)
-        for j in new.k():
-            for i in new.n():
-                new.values[j][i] *= -1
-        return new
+        return self * -1
 
     def __add__(self, other):
         "Add two matrices."
 
-        if self.kN() != other.kN():
+        if self.kN != other.kN:
             raise ValueError("matrices must share dimensions")
         
         sum = []
-        for j in range(self.k()):
+        for j in range(self.k):
             r = []
-            for i in range(self.n()):
+            for i in range(self.n):
                 r.append(self.values[j][i] + other.values[j][i])
             sum.append(copy.deepcopy(r))
         return sum
@@ -376,8 +577,8 @@ class Matrix:
         if isScalar(other):
             a = ratOrInt(other)
             p = copy.deepcopy(self)
-            for j in range(self.k()):
-                for i in range(self.n()):
+            for j in range(self.k):
+                for i in range(self.n):
                     p.values[j][i] = ratOrInt(p.values[j][i] * a)
             return p
 
@@ -385,7 +586,7 @@ class Matrix:
             return self * Matrix(other)
 
         elif isinstance(other, Matrix):
-            if self.k() != other.n():
+            if self.k != other.n:
                 raise ValueError("matrices are not compatible")
             
             # gives other.k x self.n matrix
@@ -406,6 +607,15 @@ class Matrix:
 
         else:
             raise TypeError("can only multiply a matrix by a scalar, vector, or matrix")
+    
+    def __truediv__(self, other):
+        "Divide a matrix by a scalar."
+
+        if isScalar(other):
+            return self * (1/other)
+
+        else:
+            raise TypeError("can only divide a matrix by a scalar")
 
     def __radd__(self, other):
         "Add two matrices, reflected version."
@@ -423,9 +633,33 @@ class Matrix:
         
         elif isinstance(other, vector):
             return Matrix(other) * self
+    
+    def __iadd__(self, other):
+        "Alter a matrix, adding another matrix to it."
+        self = self + other
+        return self
+
+    def __isub__(self, other):
+        "Alter a matrix, subtracting another matrix from it."
+        self = self - other
+        return self
+    
+    def __imul__(self, other):
+        "Alter a matrix, multiplying it by by a constant, vector, or matrix."
+        self = self * other
+        return self
+    
+    def __itruediv__(self, other):
+        "Alter a matrix, dividing it by by a constant."
+        self = self / other
+        return self
 
     def inverse(self):
         "Calculate the inverse of a matrix."
+        
+        if not self.isSquare():
+            raise ValueError("matrix must be a square matrix")
+        
         pass
 
     def det(self):
@@ -434,20 +668,36 @@ class Matrix:
         if not self.isSquare():
             raise ValueError("matrix must be a square matrix")
         
-        pass
+        d = 0
+        orders = itertools.permutations(range(self.k))
+        for o in orders:
+            a = 1
+            for j in range(self.k):
+                i = o[j]
+                a *= self[i][j]
+                #print(f'x ({i}, {j}) or {self[i][j]} = {a}')
+
+            if not orderIsEven(o):
+                a *= -1
+            d += a
+        
+        return d
     
     def __str__(self):
         "Provide a basic string representation of a matrix."
 
         s = ""
-        for j in range(self.k()):
+        for j in range(self.k):
             if j != 0:
                 s += "\n"
             s += "|"
-            for i in range(self.n()):
+            for i in range(self.n):
                 if i != 0:
                     s += " "
-                s += self.values[j][i]
+                s += str(self.values[j][i])
             s += "|"
         
         return s
+    
+    def __repr__(self):
+        return str(self)

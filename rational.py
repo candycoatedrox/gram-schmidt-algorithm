@@ -11,10 +11,17 @@ def rat(a):
             splitA = a.split("/")
 
             # check validity of rational
-            if len(splitA) != 2:
+            if len(splitA) > 2:
                 raise ValueError("improperly formatted rational number")
+            for i in range(len(splitA)):
+                if splitA[i] == "":
+                    raise ValueError("improperly formatted rational number")
+                splitA[i] = float(splitA[i])
             
-            return Rational(splitA[0], splitA[1])
+            if len(splitA) == 1:
+                return Rational(splitA[0], 1)
+            else:
+                return Rational(splitA[0], splitA[1])
         
         elif isinstance(a, int):
             return Rational(a, 1)
@@ -29,6 +36,8 @@ def rat(a):
             err = aDec - b0
             #print(f'error initial value: {err}')
             # prevN1 is the numerator for n-1, prevD2 is the denominator for n-2, etc
+            numer = b0
+            denom = 1
             prevN1 = b0
             prevD1 = 1
             prevN2 = 1
@@ -49,6 +58,17 @@ def rat(a):
         else:
             raise TypeError("can only convert str, int, float, or decimal to rational number")
 
+def ratOrInt(a):
+    if isinstance(a, int):
+        return a
+    
+    aNum = a
+    if not isinstance(a, Rational):
+        aNum = rat(a)
+    if aNum.isWhole():
+        aNum = int(aNum)
+    return aNum
+
 def contFract(a, prevN1, prevD1, prevN2, prevD2):
     '''Calculates a single recurrent iteration of a continued fraction.'''
 
@@ -67,6 +87,11 @@ def contFract(a, prevN1, prevD1, prevN2, prevD2):
     return numer, denom, err
 
 def gcf(a, b):
+        if a == 0:
+            return b
+        if b == 0:
+            return a
+
         if a > b:
             small = b
             large = a
@@ -106,7 +131,7 @@ class Rational:
         if isinstance(numer, float) and (not numer.is_integer):
             numer = int(numer * 100)
             denom = int(numer * 100)
-        elif isinstance(denom, float) and (not denom.is_integer):
+        elif isinstance(denom, float) and (not numer.is_integer):
             numer = int(numer * 100)
             denom = int(numer * 100)
 
@@ -221,7 +246,7 @@ class Rational:
     def __radd__(self, other):
         "Add two rational numbers, reflected version."
         
-        return other + self
+        return self + other
 
     def __rsub__(self, other):
         "Subtract two rational numbers, reflected version."
@@ -231,12 +256,12 @@ class Rational:
     def __rmul__(self, other):
         "Multiply two rational numbers, reflected version."
 
-        return other * self
+        return self * other
 
     def __rtruediv__(self, other):
         "Divide two rational numbers, reflected version."
 
-        return other / self
+        return self / other
 
     def __float__(self):
         "Convert a rational number to a float."
@@ -255,6 +280,9 @@ class Rational:
     def __str__(self):
         "Provide a basic string representation of a rational number."
         return(f'{self.numer}/{self.denom}')
+    
+    def __repr__(self):
+        return str(self)
     
     def isWhole(self):
         "Return a boolean value based on whether a rational number is an integer."
