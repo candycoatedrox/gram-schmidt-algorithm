@@ -12,28 +12,34 @@ def isScalar(a):
         return True
     return False
 
+def isVector(a):
+    if isinstance(a, Vector):
+        return True
+    if isinstance(a, NormalVector):
+        return True
+
 def isSquare(a):
     b = math.sqrt(a)
     return b.is_integer()
 
 # yeah i copied some code directly from my linkedlist project just to do an overly complex way of checking
 # whether a randomly shuffled ordering is swapped an odd or even amount of times... haha... what about it...
-def swap(self, key1, key2):
+def swap(list, key1: int, key2: int):
     if not(isinstance(key1, int)) or not(isinstance(key2, int)):
         raise TypeError("list indices must be integers or slices")
-    if key1 >= len(self) or key1 < -len(self) or key2 >= len(self) or key2 < -len(self):
+    if key1 >= len(list) or key1 < -len(list) or key2 >= len(list) or key2 < -len(list):
         raise KeyError("list index out of range")
     
-    v1 = self[key1]
-    v2 = self[key2]
-    self[key1] = v2
-    self[key2] = v1
+    v1 = list[key1]
+    v2 = list[key2]
+    list[key1] = v2
+    list[key2] = v1
 
 def inOrder(a):
     s = sorted(a)
     return a == s
 
-def orderIsEven(a):
+def orderIsEven(a: tuple) -> bool:
     "Returns a boolean based on whether a given ordering of a range of numbers has even swaps (True) or odd swaps (False)."
     # done via bubble sort, because I don't know how else to do it
     
@@ -54,7 +60,8 @@ def orderIsEven(a):
     else:
         return False
 
-def identity(dimV):
+def identity(dimV: int):
+    "Returns an n x n identity matrix."
     m = []
     for r in range(dimV):
         row = []
@@ -66,6 +73,26 @@ def identity(dimV):
         m.append(copy.deepcopy(row))
 
     return Matrix(m)
+
+def zero(dimV: int, dimW: int = None):
+    "Returns the zero vector or matrix for the given dimension(s)."
+
+    z = []
+
+    # IF VECTOR: dimV = dim
+    if dimW == None:
+        for n in range(dimV):
+            z.append(0)
+        return Vector(z)
+    
+    # IF MATRIX: dimV = k, dimW = n
+    else:
+        for r in range(dimV):
+            row = []
+            for c in range(dimW):
+                row.append(0)
+            z.append(copy.deepcopy(row))
+        return Matrix(z)
 
 def vector(a):
     "Converts a list or string into a vector."
@@ -94,7 +121,9 @@ def innerProduct(v, w, Gij):
     sum = 0
     for i in range(dimV):
         for j in range(dimV):
-            sum += (v[i] * v[j] * Gij.values[j][i])
+            a = (v[i] * w[j] * Gij[i][j])
+            #print(f'{v[i]} * {w[j]} * {Gij[i][j]} = {a}')
+            sum += a
     
     if isinstance(v, NormalVector):
         sum /= math.sqrt(v.divSqrt)
@@ -102,6 +131,69 @@ def innerProduct(v, w, Gij):
         sum /= math.sqrt(w.divSqrt)
     
     return sum
+
+def maxLength(l: list):
+    "Returns the length of the longest item in a list."
+
+    maxLen = 0
+    for n in l:
+        if len(n) > maxLen:
+            maxLen = len(n)
+    return maxLen
+
+def vertList(vectors: list):
+    "Returns a string representation of a list of vectors of the same dimension, in vertical form."
+
+    norm = False
+    dimV = vectors[0].dim
+    comps = []
+    s = ""
+
+    for v in vectors:
+        if not isVector(v):
+            raise TypeError("all arguments must be vectors")
+        elif isinstance(v, NormalVector):
+            norm = True
+        
+        if v.dim != dimV:
+            raise ValueError("all vectors must share dimension")
+        
+        comps.append(v.vert().split("\n"))
+    
+    for i in range(dimV):
+        if i != 0:
+            s += "\n"
+        
+        for n in range(len(comps)):
+            if n != 0:
+                if norm:
+                    s += "   "
+                else:
+                    s += " "
+            s += comps[n][i]
+            
+            space = maxLength(comps[n]) - len(comps[n][i])
+            for x in range(space):
+                s += " "
+
+    # are there any normalized vectors?
+    '''if norm:
+        for i in range(len(vectors)):
+            if i != 0:
+                s += "\n\n"
+            s += vectors[i].vert()
+
+    else:
+        for i in range(dimV):
+            if i != 0:
+                s += "\n"
+            
+            for n in range(len(comps)):
+                if n != 0:
+                    s += " "
+                s += comps[n][i]'''
+    
+    return s
 
 class Vector:
 
@@ -133,6 +225,18 @@ class Vector:
             raise KeyError("component index out of range")
         
         self.vector[n] = value
+    
+    def __iter__(self):
+        "Allows iteration through components of a vector."
+        for i in range(self.dim):
+            yield self[i]
+    
+    def reduce(self):
+        for i in range(self.dim):
+            if isinstance(self[i], Rational):
+                self[i].reduce()
+                if self[i].denom == 1:
+                    self[i] = int(self[i])
     
     def mag2(self, Gij):
         "Returns the magnitude-squared of a vector within a given inner product space."
@@ -197,7 +301,7 @@ class Vector:
         "Divide a vector by a scalar."
 
         if isScalar(other):
-            return self * (1/other)
+            return self * (Rational(1,other))
 
         else:
             raise TypeError("can only divide a vector by a scalar")
@@ -240,29 +344,52 @@ class Vector:
         "Alter a vector, dividing it by by a constant."
         self = self / other
         return self
+    
+    def vec(self):
+        "Returns itself. Exists to allow vec() when a NormalVector is expected."
+        return self
 
     def normalize(self, Gij):
         "Normalize a vector within a given inner product space."
         # input Vector — outputs NormalVector (unless mag2 is a perfect square)
 
-        mag2 = self.mag2(Gij)
+        # getting any fractional components out of the way
+        v = self
+        rat = False
+        d = []
+        for n in self:
+            if isinstance(n, Rational):
+                rat = True
+                d.append(n.denom)
+        
+        if rat:
+            l = math.lcm(*d)
+            #print(f'lcm: {l}')
+            v *= l
+            v.reduce()
+            
+            g = math.gcd(*v.vector)
+            #print(f'gcd: {g}')
+            v /= g
+
+        mag2 = v.mag2(Gij)
         if isSquare(mag2):
-            v = self / math.sqrt(mag2)
+            v /= math.sqrt(mag2)
             return v
         else:
-            return NormalVector(mag2, self.vector)
+            return NormalVector(mag2, v.vector)
 
     def matrix(self):
         "Returns a vector as a matrix."
 
         m = []
-        for n in self.vector:
+        for n in self:
             nL = [n]
             m.append(copy.deepcopy(nL))
         return Matrix(m)
     
     def __str__(self):
-        "Provide a basic string representation of a normalized vector."
+        "Provide a basic string representation of a vector."
 
         s = "("
         for i in range(self.dim):
@@ -275,7 +402,20 @@ class Vector:
     
     def __repr__(self):
         return str(self)
+    
+    def vert(self):
+        "Returns a basic string representation of a vector, in vertical form."
 
+        s = ""
+        for i in range(self.dim):
+            if i != 0:
+                s += "\n"
+            s += f'|{self[i]}|'
+        
+        return s
+
+# You should not ever be defining a NormalVector directly.
+# Always define a Vector first, then normalize() it.
 class NormalVector:
 
     # MATH NEEDS TO BE ABLE TO FUNCTION WITH BOTH OTHER NORMALVECTORS AND VECTORS
@@ -307,11 +447,27 @@ class NormalVector:
             raise KeyError("component index out of range")
         
         self.vector[n] = value
+    
+    def __iter__(self):
+        "Allows iteration through components of a normalized vector."
+        for i in range(self.dim):
+            yield self[i]
+    
+    def reduce(self):
+        for i in range(self.dim):
+            if isinstance(self[i], Rational):
+                self[i].reduce()
+                if self[i].denom == 1:
+                    self[i] = int(self[i])
 
     def mag(self):
         "Returns the magnitude of a normalized vector."
         # lol
         return 1
+    
+    def vec(self):
+        "Returns the vector component of a normalized vector."
+        return Vector(self.vector)
 
     def __cmp__(self, other):
         "Comparson, used to implement ==, <, etc."
@@ -417,6 +573,21 @@ class NormalVector:
     
     def __repr__(self):
         return str(self)
+    
+    def vert(self):
+        "Returns a basic string representation of a vector, in vertical form."
+
+        s = ""
+        for i in range(self.dim):
+            if i != 0:
+                s += "\n"
+            s += f'|{self[i]}|'
+            if i == 0:
+                s += " * 1"
+            elif i == 1:
+                s += f'  √{self.divSqrt}'
+        
+        return s
 
 class Matrix:
     
@@ -448,7 +619,7 @@ class Matrix:
             else:
                 raise TypeError("matrix must be made of a list of either lists (rows) or vectors (columns)")
             
-            # k = number of columns; n = number of rows
+            # k = number of rows; n = number of columns
             self.k = len(self.values)
             self.n = len(self.values[0])
             self.kN = (self.k, self.n)
@@ -456,7 +627,7 @@ class Matrix:
             self.second_access = False
 
             for r in self.values:
-                if len(r) != self.k:
+                if len(r) != self.n:
                     raise ValueError("inconsistent amount of columns")
         
         else:
@@ -483,7 +654,7 @@ class Matrix:
                 raise KeyError("component index j out of range")
             
             self.second_access = False
-            return self.values[self.key1][key]
+            return self.values[key][self.key1]
 
     def __setitem__(self, key, value):
         "Sets the ith/jth component of a matrix to the specified value."
@@ -506,7 +677,15 @@ class Matrix:
                 raise KeyError("component index j out of range")
             
             self.second_access = False
-            self.values[self.key1][key] = value
+            self.values[key][self.key1] = value
+    
+    def reduce(self):
+        for i in range(self.n):
+            for j in range(self.k):
+                if isinstance(self[i][j], Rational):
+                    self[i][j].reduce()
+                    if self[i][j].denom == 1:
+                        self[i][j] = int(self[i][j])
     
     def isSquare(self):
         "Returns a boolean value depending on whether a matrix is square."

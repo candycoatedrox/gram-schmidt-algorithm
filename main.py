@@ -3,7 +3,7 @@ import sys
 import time
 import copy
 from rational import Rational, rat, ratOrInt
-from vector import Vector, NormalVector, Matrix, innerProduct, identity
+from vector import *
 
 # make the whole thing function on fractions???
 # currently started to make it function on floats but i can fix that
@@ -49,9 +49,15 @@ def getDim():
     return (compNum, dimV)
 
 def getInnerProd(dimV):
-    standard = input("Standard inner product? (y/n): ")
-    if standard == "y" or standard == "Y":
-        return identity(dimV)
+    standardAns = False
+    while not standardAns:
+        standard = input("Standard inner product? (y/n): ")
+        if standard == "y" or standard == "Y":
+            return identity(dimV)
+        elif standard == "n" or standard == "N":
+            standardAns = True
+        else:
+            print('Please input either "y" or "n".')
     
     g = []
     for r in range(dimV):
@@ -87,7 +93,7 @@ def getBasis(compNum, dimV):
         while not(valid):
             rawVector = input(f"Enter basis vector {n + 1}, with components separated by spaces: ")
             vStr = rawVector.split()
-            print(vStr)
+            #print(vStr)
 
             vector = []
             if len(vStr) == compNum:
@@ -113,24 +119,47 @@ def getBasis(compNum, dimV):
 def gramSchmidt(basis, Gij):
     e = []
 
-    pass
+    for n in range(len(basis)):
+        en = basis[n]
+        if n != 0:
+            for i in range(n):
+                p = innerProduct(basis[n], e[i].vec(), Gij)
+                print(f'inner product: {p}')
+                if isinstance(e[i], NormalVector):
+                    p *= Rational(1, e[i].divSqrt)
+                p = ratOrInt(p)
+                print(f'scalar factor: {p}')
+                p *= e[i].vec()
+
+                en -= p
+        
+        print(f'pre-normalized: {en}')
+        print(f'magnitude: {en.mag(Gij)}')
+        print(f'normalized: {en.normalize(Gij)}')
+        e.append(en.normalize(Gij))
+
+    return e
 
 def main():
-    '''compNum, dimV = getDim()
+    compNum, dimV = getDim()
     Gij = getInnerProd(compNum)
-    print(Gij)
+    #print(Gij)
     basis = getBasis(compNum, dimV)
-    print(basis)
+    #print(basis)
 
-    orthonormal = gramSchmidt(basis, Gij)'''
+    orthonormal = gramSchmidt(basis, Gij)
+    #print(orthonormal)
+    print(f'Your orthonormal basis is:\n{vertList(orthonormal)}')
 
-    # testing Vector, NormalizedVector, and Matrix!
+    '''i = identity(3)
+    v = Vector([Rational(6,5), 0, Rational(-3,5)])
+    vNorm = v.normalize(i)
+    print(vNorm)'''
 
-    i = identity(3)
-    m1 = Matrix([[2,4,3], [-1,0,1], [3,-1,0]])
-
-    print(m1[0][0])
-    print(m1.det())
+    '''i = identity(2)
+    v = Vector([2, 1])
+    vNorm = v.normalize(i)
+    print(vNorm.vert())'''
 
 
 if __name__ == '__main__':

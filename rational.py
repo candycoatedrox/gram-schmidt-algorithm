@@ -1,62 +1,62 @@
 from decimal import *
 
 def rat(a):
-        "Converts a number or string into a rational."
-        from math import floor
+    "Converts a number or string into a rational."
+    from math import floor
 
-        if isinstance(a, Rational):
-            return a
-        
-        elif isinstance(a, str):
-            splitA = a.split("/")
+    if isinstance(a, Rational):
+        return a
+    
+    elif isinstance(a, str):
+        splitA = a.split("/")
 
-            # check validity of rational
-            if len(splitA) > 2:
+        # check validity of rational
+        if len(splitA) > 2:
+            raise ValueError("improperly formatted rational number")
+        for i in range(len(splitA)):
+            if splitA[i] == "":
                 raise ValueError("improperly formatted rational number")
-            for i in range(len(splitA)):
-                if splitA[i] == "":
-                    raise ValueError("improperly formatted rational number")
-                splitA[i] = float(splitA[i])
-            
-            if len(splitA) == 1:
-                return Rational(splitA[0], 1)
-            else:
-                return Rational(splitA[0], splitA[1])
+            splitA[i] = float(splitA[i])
         
-        elif isinstance(a, int):
-            return Rational(a, 1)
-        
-        elif isinstance(a, float) or isinstance(a, Decimal):
-            if isinstance(a, float):
-                # ensures precise representation of decimals
-                aDec = Decimal(str(a))
-            
-            i = 7 # number of times to run the continued fractions formula — can be increased
-            b0 = floor(aDec)
-            err = aDec - b0
-            #print(f'error initial value: {err}')
-            # prevN1 is the numerator for n-1, prevD2 is the denominator for n-2, etc
-            numer = b0
-            denom = 1
-            prevN1 = b0
-            prevD1 = 1
-            prevN2 = 1
-            prevD2 = 0
-
-            for n in range(0, i):
-                if err == 0:
-                    break
-
-                numer, denom, err = contFract(err, prevN1, prevD1, prevN2, prevD2)
-
-                prevN2 = prevN1
-                prevD2 = prevD1
-                prevN1 = numer
-                prevD1 = denom
-            return Rational(numer, denom)
-        
+        if len(splitA) == 1:
+            return Rational(splitA[0], 1)
         else:
-            raise TypeError("can only convert str, int, float, or decimal to rational number")
+            return Rational(splitA[0], splitA[1])
+    
+    elif isinstance(a, int):
+        return Rational(a, 1)
+    
+    elif isinstance(a, float) or isinstance(a, Decimal):
+        if isinstance(a, float):
+            # ensures precise representation of decimals
+            aDec = Decimal(str(a))
+        
+        i = 7 # number of times to run the continued fractions formula — can be increased
+        b0 = floor(aDec)
+        err = aDec - b0
+        #print(f'error initial value: {err}')
+        # prevN1 is the numerator for n-1, prevD2 is the denominator for n-2, etc
+        numer = b0
+        denom = 1
+        prevN1 = b0
+        prevD1 = 1
+        prevN2 = 1
+        prevD2 = 0
+
+        for n in range(0, i):
+            if err == 0:
+                break
+
+            numer, denom, err = contFract(err, prevN1, prevD1, prevN2, prevD2)
+
+            prevN2 = prevN1
+            prevD2 = prevD1
+            prevN1 = numer
+            prevD1 = denom
+        return Rational(numer, denom)
+    
+    else:
+        raise TypeError("can only convert str, int, float, or decimal to rational number")
 
 def ratOrInt(a):
     if isinstance(a, int):
@@ -87,29 +87,29 @@ def contFract(a, prevN1, prevD1, prevN2, prevD2):
     return numer, denom, err
 
 def gcf(a, b):
-        if a == 0:
-            return b
-        if b == 0:
-            return a
+    if a == 0:
+        return b
+    if b == 0:
+        return a
 
-        if a > b:
-            small = b
-            large = a
+    if a > b:
+        small = b
+        large = a
+    else:
+        small = a
+        large = b
+    
+    factor = 1
+    while 1 == 1:
+        remainder = large % small
+        if (remainder) == 0:
+            factor = small
+            break
         else:
-            small = a
-            large = b
-        
-        factor = 1
-        while 1 == 1:
-            remainder = large % small
-            if (remainder) == 0:
-                factor = small
-                break
-            else:
-                large = small
-                small = remainder
-        
-        return factor
+            large = small
+            small = remainder
+    
+    return factor
 
 class Rational:
 
@@ -126,12 +126,20 @@ class Rational:
         numer = self.numer
         denom = self.denom
 
+        # this whole section looks insane
+        if isinstance(numer, Rational):
+            denom *= numer.denom
+            numer = numer.numer
+        if isinstance(denom, Rational):
+            numer *= denom.denom
+            denom = denom.numer
+
         # Ensures numerator and denominator are both whole numbers (only considers the first two digits past the decimal point)
         # (It doesn't matter if they end up as massive numbers, since they'll be reduced anyway)
-        if isinstance(numer, float) and (not numer.is_integer):
+        if (isinstance(numer, float) or isinstance(numer, Decimal)) and (not numer.is_integer):
             numer = int(numer * 100)
             denom = int(numer * 100)
-        elif isinstance(denom, float) and (not numer.is_integer):
+        elif (isinstance(numer, float) or isinstance(numer, Decimal)) and (not numer.is_integer):
             numer = int(numer * 100)
             denom = int(numer * 100)
 
@@ -159,13 +167,25 @@ class Rational:
     def __cmp__(self, other):
         "Comparson, used to implement ==, <, etc."
 
-        if self.numer == other.numer and self.denom == other.denom:
-            return 0
-        else:
-            dec1 = self.numer / self.denom
-            dec2 = other.numer / other.denom
+        if isinstance(other, Rational):
+            if self.numer == other.numer and self.denom == other.denom:
+                return 0
+            else:
+                
+                dec1 = self.numer / self.denom
+                dec2 = other.numer / other.denom
 
-            if dec1 > dec2:
+                if dec1 > dec2:
+                    return 1
+                else:
+                    return -1
+        
+        else:
+            dec = self.numer / self.denom
+
+            if dec == other:
+                return 0
+            elif dec > other:
                 return 1
             else:
                 return -1
@@ -191,8 +211,10 @@ class Rational:
         "Add two rational numbers."
 
         otherCopy = other
-        if isinstance(other, int) or isinstance(other, float):
+        if isinstance(other, int) or isinstance(other, float) or isinstance(other, Decimal):
             otherCopy = rat(other)
+        elif not isinstance(other, Rational):
+            return NotImplemented
         elif self.denom == otherCopy.denom:
             return Rational(self.numer + otherCopy.numer, self.denom)
         
@@ -207,8 +229,10 @@ class Rational:
         "Subtract two rational numbers."
         
         otherCopy = other
-        if isinstance(other, int) or isinstance(other, float):
+        if isinstance(other, int) or isinstance(other, float) or isinstance(other, Decimal):
             otherCopy = rat(other)
+        elif not isinstance(other, Rational):
+            return NotImplemented
         elif self.denom == otherCopy.denom:
             return Rational(self.numer - otherCopy.numer, self.denom)
         
@@ -223,8 +247,10 @@ class Rational:
         "Multiply two rational numbers."
 
         otherCopy = other
-        if isinstance(other, int) or isinstance(other, float):
+        if isinstance(other, int) or isinstance(other, float) or isinstance(other, Decimal):
             otherCopy = rat(other)
+        elif not isinstance(other, Rational):
+            return NotImplemented
         
         numer = self.numer * otherCopy.numer
         denom = self.denom * otherCopy.denom
@@ -234,15 +260,11 @@ class Rational:
         "Divide two rational numbers."
 
         otherCopy = other
-        if isinstance(other, int) or isinstance(other, float):
+        if isinstance(other, int) or isinstance(other, float) or isinstance(other, Decimal):
             otherCopy = rat(other)
         
         return self * otherCopy.invert()
-
-    # I don't understand why the reflected operations are useful?
-    # What's the point of defining the second one as "self" instead? When will it ever get called?
-    # The docs say it's called when the object on the left doesn't have the original operation defined,
-    # but I don't think defining operations within a class lets you mix classes anyway, so won't x + y always call __add__?
+    
     def __radd__(self, other):
         "Add two rational numbers, reflected version."
         
