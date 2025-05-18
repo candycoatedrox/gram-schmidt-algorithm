@@ -93,7 +93,6 @@ def getBasis(compNum, dimV):
         while not(valid):
             rawVector = input(f"Enter basis vector {n + 1}, with components separated by spaces: ")
             vStr = rawVector.split()
-            #print(vStr)
 
             vector = []
             if len(vStr) == compNum:
@@ -124,18 +123,13 @@ def gramSchmidt(basis, Gij):
         if n != 0:
             for i in range(n):
                 p = innerProduct(basis[n], e[i].vec(), Gij)
-                print(f'inner product: {p}')
                 if isinstance(e[i], NormalVector):
                     p *= Rational(1, e[i].divSqrt)
                 p = ratOrInt(p)
-                print(f'scalar factor: {p}')
                 p *= e[i].vec()
 
                 en -= p
-        
-        print(f'pre-normalized: {en}')
-        print(f'magnitude: {en.mag(Gij)}')
-        print(f'normalized: {en.normalize(Gij)}')
+
         e.append(en.normalize(Gij))
 
     return e
@@ -143,23 +137,10 @@ def gramSchmidt(basis, Gij):
 def main():
     compNum, dimV = getDim()
     Gij = getInnerProd(compNum)
-    #print(Gij)
     basis = getBasis(compNum, dimV)
-    #print(basis)
 
     orthonormal = gramSchmidt(basis, Gij)
-    #print(orthonormal)
     print(f'Your orthonormal basis is:\n{vertList(orthonormal)}')
-
-    '''i = identity(3)
-    v = Vector([Rational(6,5), 0, Rational(-3,5)])
-    vNorm = v.normalize(i)
-    print(vNorm)'''
-
-    '''i = identity(2)
-    v = Vector([2, 1])
-    vNorm = v.normalize(i)
-    print(vNorm.vert())'''
 
 
 if __name__ == '__main__':

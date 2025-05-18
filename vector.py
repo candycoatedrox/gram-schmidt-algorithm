@@ -122,7 +122,6 @@ def innerProduct(v, w, Gij):
     for i in range(dimV):
         for j in range(dimV):
             a = (v[i] * w[j] * Gij[i][j])
-            #print(f'{v[i]} * {w[j]} * {Gij[i][j]} = {a}')
             sum += a
     
     if isinstance(v, NormalVector):
@@ -175,23 +174,6 @@ def vertList(vectors: list):
             space = maxLength(comps[n]) - len(comps[n][i])
             for x in range(space):
                 s += " "
-
-    # are there any normalized vectors?
-    '''if norm:
-        for i in range(len(vectors)):
-            if i != 0:
-                s += "\n\n"
-            s += vectors[i].vert()
-
-    else:
-        for i in range(dimV):
-            if i != 0:
-                s += "\n"
-            
-            for n in range(len(comps)):
-                if n != 0:
-                    s += " "
-                s += comps[n][i]'''
     
     return s
 
@@ -364,12 +346,10 @@ class Vector:
         
         if rat:
             l = math.lcm(*d)
-            #print(f'lcm: {l}')
             v *= l
             v.reduce()
             
             g = math.gcd(*v.vector)
-            #print(f'gcd: {g}')
             v /= g
 
         mag2 = v.mag2(Gij)
@@ -854,7 +834,6 @@ class Matrix:
             for j in range(self.k):
                 i = o[j]
                 a *= self[i][j]
-                #print(f'x ({i}, {j}) or {self[i][j]} = {a}')
 
             if not orderIsEven(o):
                 a *= -1
