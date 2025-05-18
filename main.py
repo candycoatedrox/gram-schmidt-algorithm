@@ -1,23 +1,6 @@
-# pg 96 of notes
-import sys
-import time
 import copy
 from rational import Rational, rat, ratOrInt
 from vector import *
-
-# make the whole thing function on fractions???
-# currently started to make it function on floats but i can fix that
-
-def slowType(text):
-    "Makes the program more user-friendly by appearing to type out the input."
-    for l in text:
-        print(l, end="")
-        sys.stdout.flush()
-        time.sleep(.025)
-
-def slowInput(prompt):
-    # how do i do this???
-    pass
 
 def getDim():
     valid = False
@@ -98,15 +81,13 @@ def getBasis(compNum, dimV):
             if len(vStr) == compNum:
                 valid = True
                 for x in vStr:
-                    xNum = ratOrInt(x)
-                    vector.append(xNum)
-                    '''try:
+                    try:
                         xNum = ratOrInt(x)
                         vector.append(xNum)
                     except:
                         valid = False
                         print("Please enter a list of integers, rational numbers, or floats.")
-                        break'''
+                        break
             else:
                 print(f"Please enter a vector with {compNum} components.")
         
